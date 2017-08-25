@@ -166,10 +166,14 @@ mongo_object <- function(col, client, verbose, orig){
       }
     }
 
-    find <- function(query = '{}', fields = '{"_id":0}', sort = '{}', skip = 0, limit = 0, handler = NULL, pagesize = 1000){
+    find <- function(query = '{}', fields = '{"_id":0}', sort = '{}', skip = 0, limit = 0, handler = NULL, pagesize = 1000, ndjson = FALSE){
       check_col()
       cur <- mongo_collection_find(col, query = query, sort = sort, fields = fields, skip = skip, limit = limit)
-      mongo_stream_in(cur, handler = handler, pagesize = pagesize, verbose = verbose)
+      if(ndjson == T){
+        ndjson(cur)
+      }else{
+        mongo_stream_in(cur, handler = handler, pagesize = pagesize, verbose = verbose)
+      }
     }
 
     iterate <- function(query = '{}', fields = '{"_id":0}', sort = '{}', skip = 0, limit = 0) {
@@ -197,10 +201,14 @@ mongo_object <- function(col, client, verbose, orig){
       }
     }
 
-    aggregate <- function(pipeline = '{}', options = '{"allowDiskUse":true}', handler = NULL, pagesize = 1000){
+    aggregate <- function(pipeline = '{}', options = '{"allowDiskUse":true}', handler = NULL, pagesize = 1000, ndjson = FALSE){
       check_col()
       cur <- mongo_collection_aggregate(col, pipeline, options)
-      mongo_stream_in(cur, handler = handler, pagesize = pagesize, verbose = verbose)
+      if(ndjson == T){
+        ndjson(cur)
+      }else{
+        mongo_stream_in(cur, handler = handler, pagesize = pagesize, verbose = verbose)
+      }
     }
 
     count <- function(query = '{}'){
