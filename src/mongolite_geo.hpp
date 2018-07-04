@@ -3,8 +3,6 @@
 
 #include <mongolite.h>
 
-
-
 //#include <Rcpp.h>
 //using namespace Rcpp;
 

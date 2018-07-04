@@ -1,4 +1,6 @@
-PKG_CPPFLAGS=-I. -Ijsonsl -Ibson -Imongoc -DBSON_COMPILATION -DSTRICT_R_HEADERS -DMONGOC_COMPILATION \
+CXX_STD = CXX11
+
+PKG_CPPFLAGS=-I. -I../inst/include/ -Ijsonsl -Ibson -Imongoc -DBSON_COMPILATION -DSTRICT_R_HEADERS -DMONGOC_COMPILATION \
   @cflags@
 
 LIBBSON=bson/bcon.o bson/bson-clock.o bson/bson-context.o \

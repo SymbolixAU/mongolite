@@ -1,5 +1,6 @@
 #include <mongolite.h>
-#include <mongolite_geo.hpp>
+//#include <mongolite_geo.hpp>
+
 //#include "geojson_to_sf.h"
 
 
@@ -55,10 +56,6 @@ SEXP R_mongo_cursor_next_bsonlist (SEXP ptr, SEXP n){
 }
 
 SEXP R_mongo_cursor_next_json (SEXP ptr, SEXP n){
-  //printf("printing");
-  //printing_from_cpp();
-  //geojson_cpp_test();
-  //printing_from_geojsonsf();
   mongoc_cursor_t *c = r2cursor(ptr);
   int len = asInteger(n);
   SEXP out = PROTECT(allocVector(STRSXP, len));
@@ -86,12 +83,52 @@ SEXP R_mongo_cursor_next_json (SEXP ptr, SEXP n){
       SET_STRING_ELT(out2, i, STRING_ELT(out, i));
     }
     UNPROTECT(2);
+    //print_out(out2);
+    //TODO(get this working)
+    //SEXP sf = call_create_geojson(out2, false);
     return out2;
   }
   UNPROTECT(1);
   return out;
 }
 
+SEXP R_mongo_cursor_next_geojson (SEXP ptr, SEXP n){
+  //calling_geojson_sf();
+  mongoc_cursor_t *c = r2cursor(ptr);
+  int len = asInteger(n);
+  SEXP out = PROTECT(allocVector(STRSXP, len));
+  const bson_t *b = NULL;
+  int total = 0;
+  bson_error_t err;
+  while(total < len){
+    if(!mongoc_cursor_next(c, &b)){
+      if(mongoc_cursor_error (c, &err))
+        stop(err.message);
+      else
+        //cursor exchausted: done
+        break;
+    } else {
+      size_t jsonlength;
+      char *str = bson_as_json ((bson_t*) b, &jsonlength);
+      SET_STRING_ELT(out, total, mkCharLenCE(str, jsonlength, CE_UTF8));
+      if(str) bson_free(str);
+      total++;
+    }
+  }
+  if(total < len){
+    SEXP out2 = PROTECT(allocVector(STRSXP, total));
+    for(int i = 0; i < total; i++){
+      SET_STRING_ELT(out2, i, STRING_ELT(out, i));
+    }
+    UNPROTECT(2);
+    // TODO(make sf)
+    //SEXP sf = geojsonsf_generic_geojson_to_sf(out2, false);
+    return out2;
+  }
+  UNPROTECT(1);
+  // TODO(make sf)
+  return out;
+}
 
 SEXP R_mongo_cursor_next_page(SEXP ptr, SEXP size, SEXP as_json){
   mongoc_cursor_t *c = r2cursor(ptr);
