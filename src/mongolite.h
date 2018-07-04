@@ -1,3 +1,6 @@
+#ifndef H_MONGOLITE
+#define H_MONGOLITE
+
 #include <Rinternals.h>
 #include <bson.h>
 #include <mongoc.h>
@@ -20,3 +23,5 @@ void mongolite_log_handler (mongoc_log_level_t log_level, const char *log_domain
 SEXP ConvertObject(bson_iter_t* iter, bson_iter_t* counter);
 SEXP bson2list(bson_t *b);
 SEXP bson_to_str(const bson_t * b);
+
+#endif /* H_MONGOLITE */

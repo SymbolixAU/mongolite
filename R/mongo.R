@@ -1,3 +1,7 @@
+#' @importFrom Rcpp sourceCpp
+NULL
+
+
 #' MongoDB client
 #'
 #' Connect to a MongoDB collection. Returns a [mongo] connection object with

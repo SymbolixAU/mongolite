@@ -1,4 +1,7 @@
 #include <mongolite.h>
+#include <mongolite_geo.hpp>
+//#include "geojson_to_sf.h"
+
 
 SEXP R_mongo_cursor_more (SEXP ptr){
   mongoc_cursor_t *c = r2cursor(ptr);
@@ -52,6 +55,10 @@ SEXP R_mongo_cursor_next_bsonlist (SEXP ptr, SEXP n){
 }
 
 SEXP R_mongo_cursor_next_json (SEXP ptr, SEXP n){
+  //printf("printing");
+  //printing_from_cpp();
+  //geojson_cpp_test();
+  //printing_from_geojsonsf();
   mongoc_cursor_t *c = r2cursor(ptr);
   int len = asInteger(n);
   SEXP out = PROTECT(allocVector(STRSXP, len));
