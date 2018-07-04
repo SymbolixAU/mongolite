@@ -25,8 +25,9 @@ extern "C" void print_out(SEXP out) {
 extern "C" SEXP call_create_geojson(SEXP out, bool& expand_geometries) {
   //Rcpp::StringVector geojson, bool& expand_geometries
   Rcpp::StringVector geojson = as< Rcpp::StringVector >(out);
-  SEXP sf = generic_geojson_to_sf(geojson, expand_geometries);
-  //SEXP sf;
+  Rcpp::Rcout << "geojson: " <<  geojson << std::endl;
+  //SEXP sf = generic_geojson_to_sf(geojson, expand_geometries);
+  SEXP sf;
   return sf;
 }
 

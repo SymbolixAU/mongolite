@@ -85,7 +85,7 @@ SEXP R_mongo_cursor_next_json (SEXP ptr, SEXP n){
     UNPROTECT(2);
     //print_out(out2);
     //TODO(get this working)
-    //SEXP sf = call_create_geojson(out2, false);
+    SEXP sf = call_create_geojson(out2, false);
     return out2;
   }
   UNPROTECT(1);
