@@ -177,7 +177,8 @@ mongo_cursor_next_bson <- function(cursor){
 
 #' @useDynLib mongolite R_mongo_cursor_next_json
 mongo_cursor_next_json <- function(cursor, n = 1){
-  .Call(R_mongo_cursor_next_json, cursor, n = n)
+  json = .Call(R_mongo_cursor_next_json, cursor, n = n)
+  return(json)
 }
 
 #' @useDynLib mongolite R_mongo_cursor_next_bsonlist

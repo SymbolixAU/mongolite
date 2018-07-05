@@ -65,9 +65,14 @@
 #
 # mRestaurant$aggregate(pipeline = qry, ndjson = T )
 
+
+#
 # library(sf)
 # library(geojsonsf)
 # m <- mongo(collection = "SA2_2016", db = "ABS")
+#
+# m <- symbolix.utils::connectToMongo(db = "ABS", collection = "SA2_2016", usr = "db_user")
+#
 # res <- m$find(ndjson = T, limit = 1)
 # sf <- geojsonsf::geojson_sf(res)
 # sf

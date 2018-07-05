@@ -82,10 +82,21 @@ SEXP R_mongo_cursor_next_json (SEXP ptr, SEXP n){
     for(int i = 0; i < total; i++){
       SET_STRING_ELT(out2, i, STRING_ELT(out, i));
     }
-    UNPROTECT(2);
     //print_out(out2);
     //TODO(get this working)
-    SEXP sf = call_create_geojson(out2, false);
+    //SEXP sf = PROTECT(allocVector(VECSXP, total));
+    //SEXP sf = PROTECT(allocVector(REALSXP, 4));
+    //call_start_bbox();
+    //sf = call_create_geojson(out2, false);
+
+    SEXP nv = PROTECT(allocVector(REALSXP, 4));
+
+
+    int j = 1;
+    j = manipulate_int(j);
+    printf("%d", j);
+    //call_create_geojson(out2, false);
+    UNPROTECT(3);
     return out2;
   }
   UNPROTECT(1);
