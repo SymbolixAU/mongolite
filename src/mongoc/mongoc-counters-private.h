@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_COUNTERS_PRIVATE_H
 #define MONGOC_COUNTERS_PRIVATE_H
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
-
-#include <bson.h>
+#include <mongoc/mongoc.h>
+#include <bson/bson.h>
 
 #ifdef __linux__
 #include <sched.h>
@@ -72,7 +71,7 @@ _mongoc_get_cpu_count (void)
    }
 
    return len;
-#elif defined(__APPLE__) || defined(__sun)
+#elif defined(__APPLE__) || defined(__sun) || defined(_AIX)
    int ncpu;
 
    ncpu = (int) sysconf (_SC_NPROCESSORS_ONLN);
@@ -91,7 +90,7 @@ _mongoc_get_cpu_count (void)
 #define _mongoc_counter_add(v, count) bson_atomic_int64_add (&(v), (count))
 
 
-#if defined(ENABLE_RDTSCP)
+#if defined(MONGOC_ENABLE_RDTSCP)
 static BSON_INLINE unsigned
 _mongoc_sched_getcpu (void)
 {
@@ -102,7 +101,7 @@ _mongoc_sched_getcpu (void)
    core_id = rcx & 0xFFF;
    return core_id;
 }
-#elif defined(HAVE_SCHED_GETCPU)
+#elif defined(MONGOC_HAVE_SCHED_GETCPU)
 #define _mongoc_sched_getcpu sched_getcpu
 #else
 #define _mongoc_sched_getcpu() (0)
@@ -137,7 +136,7 @@ enum {
    LAST_COUNTER
 };
 
-
+#ifdef MONGOC_ENABLE_SHM_COUNTERS
 #define COUNTER(ident, Category, Name, Description)                   \
    static BSON_INLINE void mongoc_counter_##ident##_add (int64_t val) \
    {                                                                  \
@@ -165,7 +164,24 @@ enum {
    }
 #include "mongoc-counters.defs"
 #undef COUNTER
-
+#else
+/* when counters are disabled, these functions are no-ops */
+#define COUNTER(ident, Category, Name, Description)                   \
+   static BSON_INLINE void mongoc_counter_##ident##_add (int64_t val) \
+   {                                                                  \
+   }                                                                  \
+   static BSON_INLINE void mongoc_counter_##ident##_inc (void)        \
+   {                                                                  \
+   }                                                                  \
+   static BSON_INLINE void mongoc_counter_##ident##_dec (void)        \
+   {                                                                  \
+   }                                                                  \
+   static BSON_INLINE void mongoc_counter_##ident##_reset (void)      \
+   {                                                                  \
+   }
+#include "mongoc-counters.defs"
+#undef COUNTER
+#endif
 
 BSON_END_DECLS
 

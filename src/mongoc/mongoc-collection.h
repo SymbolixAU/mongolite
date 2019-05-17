@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_COLLECTION_H
 #define MONGOC_COLLECTION_H
 
-#if !defined(MONGOC_INSIDE) && !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-change-stream.h"
-#include "mongoc-macros.h"
-#include "mongoc-bulk-operation.h"
-#include "mongoc-flags.h"
-#include "mongoc-cursor.h"
-#include "mongoc-index.h"
-#include "mongoc-read-prefs.h"
-#include "mongoc-read-concern.h"
-#include "mongoc-write-concern.h"
-#include "mongoc-find-and-modify.h"
+#include "mongoc/mongoc-change-stream.h"
+#include "mongoc/mongoc-macros.h"
+#include "mongoc/mongoc-bulk-operation.h"
+#include "mongoc/mongoc-flags.h"
+#include "mongoc/mongoc-cursor.h"
+#include "mongoc/mongoc-index.h"
+#include "mongoc/mongoc-read-prefs.h"
+#include "mongoc/mongoc-read-concern.h"
+#include "mongoc/mongoc-write-concern.h"
+#include "mongoc/mongoc-find-and-modify.h"
 
 BSON_BEGIN_DECLS
 
@@ -101,7 +99,9 @@ mongoc_collection_count (mongoc_collection_t *collection,
                          int64_t skip,
                          int64_t limit,
                          const mongoc_read_prefs_t *read_prefs,
-                         bson_error_t *error);
+                         bson_error_t *error)
+   BSON_GNUC_DEPRECATED_FOR (mongoc_collection_count_documents or
+                             mongoc_collection_estimated_document_count);
 MONGOC_EXPORT (int64_t)
 mongoc_collection_count_with_opts (mongoc_collection_t *collection,
                                    mongoc_query_flags_t flags,
@@ -110,7 +110,9 @@ mongoc_collection_count_with_opts (mongoc_collection_t *collection,
                                    int64_t limit,
                                    const bson_t *opts,
                                    const mongoc_read_prefs_t *read_prefs,
-                                   bson_error_t *error);
+                                   bson_error_t *error)
+   BSON_GNUC_DEPRECATED_FOR (mongoc_collection_count_documents or
+                             mongoc_collection_estimated_document_count);
 MONGOC_EXPORT (bool)
 mongoc_collection_drop (mongoc_collection_t *collection, bson_error_t *error);
 MONGOC_EXPORT (bool)
@@ -216,7 +218,7 @@ mongoc_collection_update_many (mongoc_collection_t *collection,
                                const bson_t *opts,
                                bson_t *reply,
                                bson_error_t *error);
-bool
+MONGOC_EXPORT (bool)
 mongoc_collection_replace_one (mongoc_collection_t *collection,
                                const bson_t *selector,
                                const bson_t *replacement,
@@ -291,7 +293,7 @@ MONGOC_EXPORT (bool)
 mongoc_collection_stats (mongoc_collection_t *collection,
                          const bson_t *options,
                          bson_t *reply,
-                         bson_error_t *error);
+                         bson_error_t *error) BSON_GNUC_DEPRECATED;
 MONGOC_EXPORT (mongoc_bulk_operation_t *)
 mongoc_collection_create_bulk_operation (
    mongoc_collection_t *collection,
@@ -329,11 +331,25 @@ MONGOC_EXPORT (bool)
 mongoc_collection_validate (mongoc_collection_t *collection,
                             const bson_t *options,
                             bson_t *reply,
-                            bson_error_t *error);
+                            bson_error_t *error) BSON_GNUC_DEPRECATED;
 MONGOC_EXPORT (mongoc_change_stream_t *)
 mongoc_collection_watch (const mongoc_collection_t *coll,
                          const bson_t *pipeline,
                          const bson_t *opts);
+MONGOC_EXPORT (int64_t)
+mongoc_collection_count_documents (mongoc_collection_t *coll,
+                                   const bson_t *filter,
+                                   const bson_t *opts,
+                                   const mongoc_read_prefs_t *read_prefs,
+                                   bson_t *reply,
+                                   bson_error_t *error);
+MONGOC_EXPORT (int64_t)
+mongoc_collection_estimated_document_count (
+   mongoc_collection_t *coll,
+   const bson_t *opts,
+   const mongoc_read_prefs_t *read_prefs,
+   bson_t *reply,
+   bson_error_t *error);
 
 BSON_END_DECLS
 

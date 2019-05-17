@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_MEMCMP_PRIVATE_H
 #define MONGOC_MEMCMP_PRIVATE_H
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-config.h"
+#include "mongoc/mongoc-config.h"
 
 /* WARNING: mongoc_memcmp() must be used to verify if two secret keys
  * are equal, in constant time.
@@ -31,6 +29,6 @@
  * This function is not designed for lexicographical comparisons.
  */
 int
-mongoc_memcmp (const void *const b1_, const void *const b2_, size_t len);
+mongoc_memcmp (const void *const b1, const void *const b2, size_t len);
 
 #endif /* MONGOC_MEMCMP_PRIVATE_H */

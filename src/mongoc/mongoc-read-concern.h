@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_READ_CONCERN_H
 #define MONGOC_READ_CONCERN_H
 
-#if !defined(MONGOC_INSIDE) && !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-macros.h"
+#include "mongoc/mongoc-macros.h"
 
 BSON_BEGIN_DECLS
 
 
+#define MONGOC_READ_CONCERN_LEVEL_AVAILABLE "available"
 #define MONGOC_READ_CONCERN_LEVEL_LOCAL "local"
 #define MONGOC_READ_CONCERN_LEVEL_MAJORITY "majority"
 #define MONGOC_READ_CONCERN_LEVEL_LINEARIZABLE "linearizable"
+#define MONGOC_READ_CONCERN_LEVEL_SNAPSHOT "snapshot"
 
 typedef struct _mongoc_read_concern_t mongoc_read_concern_t;
 

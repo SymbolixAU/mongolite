@@ -15,26 +15,24 @@
  */
 
 /* for size_t */
-#include <bson.h>
-#include "mongoc-config.h"
+#include <bson/bson.h>
+#include "mongoc/mongoc-config.h"
+
+#include "mongoc/mongoc-cluster-private.h"
+#include "mongoc/mongoc-log.h"
+#include "mongoc/mongoc-trace-private.h"
+#include "mongoc/mongoc-stream-private.h"
+#include "mongoc/mongoc-stream-socket.h"
+#include "mongoc/mongoc-error.h"
+#include "mongoc/mongoc-util-private.h"
 
 #ifdef MONGOC_ENABLE_SASL
-#include "mongoc-cluster-private.h"
-#include "mongoc-log.h"
-#include "mongoc-trace-private.h"
-#include "mongoc-stream-private.h"
-#include "mongoc-stream-socket.h"
-#include "mongoc-error.h"
-#include "mongoc-util-private.h"
 
 #ifdef MONGOC_ENABLE_SASL_CYRUS
-#include "mongoc-cluster-cyrus-private.h"
+#include "mongoc/mongoc-cluster-cyrus-private.h"
 #endif
 #ifdef MONGOC_ENABLE_SASL_SSPI
-#include "mongoc-cluster-sspi-private.h"
-#endif
-#ifdef MONGOC_ENABLE_SASL_GSSAPI
-#include "mongoc-cluster-gssapi-private.h"
+#include "mongoc/mongoc-cluster-sspi-private.h"
 #endif
 
 void
@@ -70,6 +68,7 @@ _mongoc_cluster_get_conversation_id (const bson_t *reply)
 
    return 0;
 }
+#endif
 
 /*
  *--------------------------------------------------------------------------
@@ -94,14 +93,16 @@ _mongoc_cluster_auth_node_sasl (mongoc_cluster_t *cluster,
                                 mongoc_server_description_t *sd,
                                 bson_error_t *error)
 {
-#ifdef MONGOC_ENABLE_SASL_CYRUS
+#ifndef MONGOC_ENABLE_SASL
+   bson_set_error (error,
+                   MONGOC_ERROR_CLIENT,
+                   MONGOC_ERROR_CLIENT_AUTHENTICATE,
+                   "The GSSAPI authentication mechanism requires libmongoc "
+                   "built with ENABLE_SASL");
+   return false;
+#elif defined(MONGOC_ENABLE_SASL_CYRUS)
    return _mongoc_cluster_auth_node_cyrus (cluster, stream, sd, error);
-#endif
-#ifdef MONGOC_ENABLE_SASL_SSPI
+#elif defined(MONGOC_ENABLE_SASL_SSPI)
    return _mongoc_cluster_auth_node_sspi (cluster, stream, sd, error);
 #endif
-#ifdef MONGOC_ENABLE_SASL_GSSAPI
-   return _mongoc_cluster_auth_node_gssapi (cluster, stream, sd, error);
-#endif
 }
-#endif

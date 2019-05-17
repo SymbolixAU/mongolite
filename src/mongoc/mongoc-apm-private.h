@@ -17,12 +17,8 @@
 #ifndef MONGOC_APM_PRIVATE_H
 #define MONGOC_APM_PRIVATE_H
 
-#if !defined(MONGOC_INSIDE) && !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
-
-#include <bson.h>
-#include "mongoc-apm.h"
+#include <bson/bson.h>
+#include "mongoc/mongoc-apm.h"
 
 BSON_BEGIN_DECLS
 
@@ -75,6 +71,7 @@ struct _mongoc_apm_command_failed_t {
    int64_t duration;
    const char *command_name;
    const bson_error_t *error;
+   const bson_t *reply;
    int64_t request_id;
    int64_t operation_id;
    const mongoc_host_list_t *host;
@@ -181,6 +178,7 @@ mongoc_apm_command_failed_init (mongoc_apm_command_failed_t *event,
                                 int64_t duration,
                                 const char *command_name,
                                 const bson_error_t *error,
+                                const bson_t *reply,
                                 int64_t request_id,
                                 int64_t operation_id,
                                 const mongoc_host_list_t *host,

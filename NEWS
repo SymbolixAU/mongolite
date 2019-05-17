@@ -1,9 +1,34 @@
+2.1
+ - Update vendored mongo-c-driver to v1.4.0
+ - MacOS now defaults to OSX native secure transport SSL instead of openssl
+
+2.0.2
+ - Try to fix CRAN build on MacOS (CRAN builder has broken openssl)
+
+2.0.1
+ - Fix some rchk false positives because cran
+
+2.0
+ - Stable GridFS support!
+ - Lazy connection pooling: automatically re-use existing connections
+ - Update mongo-c-driver to upstream 1.12.0
+ - Switch json export to new "relaxed extended json" format
+ - Fixed a bug in libmongoc srv lookup on Windows
+ - Compiler warnings for GCC 8
+ - Fixed bson spec unit tests (Aaron Jacobs)
+ - mongo$drop() now returns FALSE instead of error if collection does not exist
+ - Added m$disconnect() method, with some internal refactoring
+ - m$aggregate() gains an iterate parameter
+ - m$export() gains query, field and sort parameters
+ - Switch to mongo.opencpu.org in examples
+
 1.6
  - Update mongo-c-driver to upstream 1.9.2
  - Expose a run() method to execute commands
  - Collection and cursor pointers now protect parent from GC
  - Make internal functions static
  - interate object gains a json() method
+ - Experimental GridFS support
 
 1.5
  - Change default value of 'filters' to NULL for MongoDB < 3.4

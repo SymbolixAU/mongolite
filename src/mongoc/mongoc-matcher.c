@@ -17,10 +17,10 @@
 
 #include <stdlib.h>
 
-#include "mongoc-error.h"
-#include "mongoc-matcher.h"
-#include "mongoc-matcher-private.h"
-#include "mongoc-matcher-op-private.h"
+#include "mongoc/mongoc-error.h"
+#include "mongoc/mongoc-matcher.h"
+#include "mongoc/mongoc-matcher-private.h"
+#include "mongoc/mongoc-matcher-op-private.h"
 
 
 static mongoc_matcher_op_t *
@@ -250,8 +250,21 @@ _mongoc_matcher_parse_logical (mongoc_matcher_opcode_t opcode, /* IN */
          return NULL;
       }
 
-      bson_iter_recurse (iter, &child);
-      bson_iter_next (&child);
+      if (!bson_iter_recurse (iter, &child)) {
+         bson_set_error (error,
+                         MONGOC_ERROR_BSON,
+                         MONGOC_ERROR_BSON_INVALID,
+                         "corrupt BSON");
+         return NULL;
+      }
+
+      if (!bson_iter_next (&child)) {
+         bson_set_error (error,
+                         MONGOC_ERROR_BSON,
+                         MONGOC_ERROR_BSON_INVALID,
+                         "corrupt BSON");
+         return NULL;
+      }
 
       if (!(left = _mongoc_matcher_parse (&child, error))) {
          return NULL;
@@ -275,8 +288,21 @@ _mongoc_matcher_parse_logical (mongoc_matcher_opcode_t opcode, /* IN */
          return NULL;
       }
 
-      bson_iter_recurse (iter, &child);
-      bson_iter_next (&child);
+      if (!bson_iter_recurse (iter, &child)) {
+         bson_set_error (error,
+                         MONGOC_ERROR_BSON,
+                         MONGOC_ERROR_BSON_INVALID,
+                         "bson_iter_recurse failed.");
+         return NULL;
+      }
+
+      if (!bson_iter_next (&child)) {
+         bson_set_error (error,
+                         MONGOC_ERROR_BSON,
+                         MONGOC_ERROR_BSON_INVALID,
+                         "corrupt BSON");
+         return NULL;
+      }
 
       if (!(right = _mongoc_matcher_parse (&child, error))) {
          return NULL;

@@ -14,43 +14,35 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_CLIENT_PRIVATE_H
 #define MONGOC_CLIENT_PRIVATE_H
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-apm-private.h"
-#include "mongoc-buffer-private.h"
-#include "mongoc-client.h"
-#include "mongoc-cluster-private.h"
-#include "mongoc-config.h"
-#include "mongoc-host-list.h"
-#include "mongoc-read-prefs.h"
-#include "mongoc-rpc-private.h"
-#include "mongoc-opcode.h"
+#include "mongoc/mongoc-apm-private.h"
+#include "mongoc/mongoc-buffer-private.h"
+#include "mongoc/mongoc-client.h"
+#include "mongoc/mongoc-cluster-private.h"
+#include "mongoc/mongoc-config.h"
+#include "mongoc/mongoc-host-list.h"
+#include "mongoc/mongoc-read-prefs.h"
+#include "mongoc/mongoc-rpc-private.h"
+#include "mongoc/mongoc-opcode.h"
 #ifdef MONGOC_ENABLE_SSL
-#include "mongoc-ssl.h"
+#include "mongoc/mongoc-ssl.h"
 #endif
-#include "mongoc-stream.h"
-#include "mongoc-topology-private.h"
-#include "mongoc-write-concern.h"
+#include "mongoc/mongoc-stream.h"
+#include "mongoc/mongoc-topology-private.h"
+#include "mongoc/mongoc-write-concern.h"
 
 BSON_BEGIN_DECLS
 
 /* protocol versions this driver can speak */
-#define WIRE_VERSION_MIN 2
-#define WIRE_VERSION_MAX 6
+#define WIRE_VERSION_MIN 3
+#define WIRE_VERSION_MAX 7
 
-/* first version that supported aggregation cursors */
-#define WIRE_VERSION_AGG_CURSOR 1
-/* first version that supported "insert", "update", "delete" commands */
-#define WIRE_VERSION_WRITE_CMD 2
-/* first version when SCRAM-SHA-1 replaced MONGODB-CR as default auth mech */
-#define WIRE_VERSION_SCRAM_DEFAULT 3
 /* first version that supported "find" and "getMore" commands */
 #define WIRE_VERSION_FIND_CMD 4
 /* first version with "killCursors" command */
@@ -67,6 +59,8 @@ BSON_BEGIN_DECLS
 #define WIRE_VERSION_COLLATION 5
 /* first version to support OP_MSG */
 #define WIRE_VERSION_OP_MSG 6
+/* first version to support array filters for "update" command */
+#define WIRE_VERSION_ARRAY_FILTERS 6
 /* first version to support retryable writes  */
 #define WIRE_VERSION_RETRY_WRITES 6
 
@@ -99,8 +93,9 @@ struct _mongoc_client_t {
    /* mongoc_client_session_t's in use, to look up lsids and clusterTimes */
    mongoc_set_t *client_sessions;
    unsigned int csid_rand_seed;
-};
 
+   uint32_t generation;
+};
 
 /* Defines whether _mongoc_client_command_with_opts() is acting as a read
  * command helper for a command like "distinct", or a write command helper for
@@ -165,6 +160,7 @@ _mongoc_client_command_with_opts (mongoc_client_t *client,
                                   mongoc_command_mode_t mode,
                                   const bson_t *opts,
                                   mongoc_query_flags_t flags,
+                                  const mongoc_read_prefs_t *user_prefs,
                                   const mongoc_read_prefs_t *default_prefs,
                                   mongoc_read_concern_t *default_rc,
                                   mongoc_write_concern_t *default_wc,
@@ -191,6 +187,5 @@ _mongoc_client_push_server_session (mongoc_client_t *client,
 void
 _mongoc_client_end_sessions (mongoc_client_t *client);
 BSON_END_DECLS
-
 
 #endif /* MONGOC_CLIENT_PRIVATE_H */

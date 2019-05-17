@@ -15,9 +15,9 @@
  */
 
 
-#include "mongoc-log.h"
-#include "mongoc-matcher-op-private.h"
-#include "mongoc-util-private.h"
+#include "mongoc/mongoc-log.h"
+#include "mongoc/mongoc-matcher-op-private.h"
+#include "mongoc/mongoc-util-private.h"
 
 /*
  *--------------------------------------------------------------------------
@@ -473,8 +473,8 @@ _mongoc_matcher_iter_eq_match (bson_iter_t *compare_iter, /* IN */
    case _TYPE_CODE (BSON_TYPE_ARRAY, BSON_TYPE_ARRAY): {
       bson_iter_t left_array;
       bson_iter_t right_array;
-      bson_iter_recurse (compare_iter, &left_array);
-      bson_iter_recurse (iter, &right_array);
+      BSON_ASSERT (bson_iter_recurse (compare_iter, &left_array));
+      BSON_ASSERT (bson_iter_recurse (iter, &right_array));
 
       while (true) {
          bool left_has_next = bson_iter_next (&left_array);
@@ -622,7 +622,7 @@ _mongoc_matcher_op_gt_match (mongoc_matcher_op_compare_t *compare, /* IN */
  *       Perform a match of {"path": {"$gte": value}}.
  *
  * Returns:
- *       true if the the spec matches, otherwise false.
+ *       true if the spec matches, otherwise false.
  *
  * Side effects:
  *       None.

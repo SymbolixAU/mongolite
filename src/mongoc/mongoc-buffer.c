@@ -15,12 +15,12 @@
  */
 
 
-#include <bson.h>
+#include <bson/bson.h>
 #include <stdarg.h>
 
-#include "mongoc-error.h"
-#include "mongoc-buffer-private.h"
-#include "mongoc-trace-private.h"
+#include "mongoc/mongoc-error.h"
+#include "mongoc/mongoc-buffer-private.h"
+#include "mongoc/mongoc-trace-private.h"
 
 
 #undef MONGOC_LOG_DOMAIN
@@ -31,9 +31,8 @@
 #endif
 
 
-#define SPACE_FOR(_b, _sz)                                                   \
-   (((ssize_t) (_b)->datalen - (ssize_t) (_b)->off - (ssize_t) (_b)->len) >= \
-    (ssize_t) (_sz))
+#define SPACE_FOR(_b, _sz) \
+   (((ssize_t) (_b)->datalen - (ssize_t) (_b)->len) >= (ssize_t) (_sz))
 
 
 /**
@@ -76,7 +75,6 @@ _mongoc_buffer_init (mongoc_buffer_t *buffer,
    buffer->data = buf;
    buffer->datalen = buflen;
    buffer->len = 0;
-   buffer->off = 0;
    buffer->realloc_func = realloc_func;
    buffer->realloc_data = realloc_data;
 }
@@ -119,7 +117,6 @@ _mongoc_buffer_clear (mongoc_buffer_t *buffer, bool zero)
       memset (buffer->data, 0, buffer->datalen);
    }
 
-   buffer->off = 0;
    buffer->len = 0;
 }
 
@@ -141,20 +138,19 @@ _mongoc_buffer_append (mongoc_buffer_t *buffer,
 
    if (!SPACE_FOR (buffer, data_size)) {
       if (buffer->len) {
-         memmove (&buffer->data[0], &buffer->data[buffer->off], buffer->len);
+         memmove (&buffer->data[0], buffer->data, buffer->len);
       }
-      buffer->off = 0;
+
       if (!SPACE_FOR (buffer, data_size)) {
-         buffer->datalen =
-            bson_next_power_of_two (data_size + buffer->len + buffer->off);
+         buffer->datalen = bson_next_power_of_two (data_size + buffer->len);
          buffer->data = (uint8_t *) buffer->realloc_func (
             buffer->data, buffer->datalen, NULL);
       }
    }
 
-   buf = &buffer->data[buffer->off + buffer->len];
+   buf = &buffer->data[buffer->len];
 
-   BSON_ASSERT ((buffer->off + buffer->len + data_size) <= buffer->datalen);
+   BSON_ASSERT ((buffer->len + data_size) <= buffer->datalen);
 
    memcpy (buf, data, data_size);
 
@@ -199,20 +195,19 @@ _mongoc_buffer_append_from_stream (mongoc_buffer_t *buffer,
 
    if (!SPACE_FOR (buffer, size)) {
       if (buffer->len) {
-         memmove (&buffer->data[0], &buffer->data[buffer->off], buffer->len);
+         memmove (&buffer->data[0], buffer->data, buffer->len);
       }
-      buffer->off = 0;
+
       if (!SPACE_FOR (buffer, size)) {
-         buffer->datalen =
-            bson_next_power_of_two (size + buffer->len + buffer->off);
+         buffer->datalen = bson_next_power_of_two (size + buffer->len);
          buffer->data = (uint8_t *) buffer->realloc_func (
             buffer->data, buffer->datalen, NULL);
       }
    }
 
-   buf = &buffer->data[buffer->off + buffer->len];
+   buf = &buffer->data[buffer->len];
 
-   BSON_ASSERT ((buffer->off + buffer->len + size) <= buffer->datalen);
+   BSON_ASSERT ((buffer->len + size) <= buffer->datalen);
 
    ret = mongoc_stream_read (stream, buf, size, size, timeout_msec);
    if (ret != size) {
@@ -235,7 +230,7 @@ _mongoc_buffer_append_from_stream (mongoc_buffer_t *buffer,
  * _mongoc_buffer_fill:
  * @buffer: A mongoc_buffer_t.
  * @stream: A stream to read from.
- * @min_bytes: The minumum number of bytes to read.
+ * @min_bytes: The minimum number of bytes to read.
  * @error: A location for a bson_error_t or NULL.
  *
  * Attempts to fill the entire buffer, or at least @min_bytes.
@@ -267,10 +262,8 @@ _mongoc_buffer_fill (mongoc_buffer_t *buffer,
    min_bytes -= buffer->len;
 
    if (buffer->len) {
-      memmove (&buffer->data[0], &buffer->data[buffer->off], buffer->len);
+      memmove (&buffer->data[0], buffer->data, buffer->len);
    }
-
-   buffer->off = 0;
 
    if (!SPACE_FOR (buffer, min_bytes)) {
       buffer->datalen = bson_next_power_of_two (buffer->len + min_bytes);
@@ -280,11 +273,8 @@ _mongoc_buffer_fill (mongoc_buffer_t *buffer,
 
    avail_bytes = buffer->datalen - buffer->len;
 
-   ret = mongoc_stream_read (stream,
-                             &buffer->data[buffer->off + buffer->len],
-                             avail_bytes,
-                             min_bytes,
-                             timeout_msec);
+   ret = mongoc_stream_read (
+      stream, &buffer->data[buffer->len], avail_bytes, min_bytes, timeout_msec);
 
    if (ret == -1) {
       bson_set_error (error,
@@ -343,21 +333,14 @@ _mongoc_buffer_try_append_from_stream (mongoc_buffer_t *buffer,
    BSON_ASSERT ((buffer->datalen + size) < INT_MAX);
 
    if (!SPACE_FOR (buffer, size)) {
-      if (buffer->len) {
-         memmove (&buffer->data[0], &buffer->data[buffer->off], buffer->len);
-      }
-      buffer->off = 0;
-      if (!SPACE_FOR (buffer, size)) {
-         buffer->datalen =
-            bson_next_power_of_two (size + buffer->len + buffer->off);
-         buffer->data = (uint8_t *) buffer->realloc_func (
-            buffer->data, buffer->datalen, NULL);
-      }
+      buffer->datalen = bson_next_power_of_two (size + buffer->len);
+      buffer->data =
+         (uint8_t *) buffer->realloc_func (buffer->data, buffer->datalen, NULL);
    }
 
-   buf = &buffer->data[buffer->off + buffer->len];
+   buf = &buffer->data[buffer->len];
 
-   BSON_ASSERT ((buffer->off + buffer->len + size) <= buffer->datalen);
+   BSON_ASSERT ((buffer->len + size) <= buffer->datalen);
 
    ret = mongoc_stream_read (stream, buf, size, 0, timeout_msec);
 

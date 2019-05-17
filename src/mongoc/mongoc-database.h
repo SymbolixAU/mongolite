@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_DATABASE_H
 #define MONGOC_DATABASE_H
 
-#if !defined(MONGOC_INSIDE) && !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-macros.h"
-#include "mongoc-cursor.h"
-#include "mongoc-flags.h"
-#include "mongoc-read-prefs.h"
-#include "mongoc-read-concern.h"
-#include "mongoc-write-concern.h"
+#include "mongoc/mongoc-macros.h"
+#include "mongoc/mongoc-cursor.h"
+#include "mongoc/mongoc-flags.h"
+#include "mongoc/mongoc-read-prefs.h"
+#include "mongoc/mongoc-read-concern.h"
+#include "mongoc/mongoc-write-concern.h"
 
 BSON_BEGIN_DECLS
 
@@ -147,6 +145,10 @@ mongoc_database_get_collection_names_with_opts (mongoc_database_t *database,
                                                 bson_error_t *error);
 MONGOC_EXPORT (mongoc_collection_t *)
 mongoc_database_get_collection (mongoc_database_t *database, const char *name);
+MONGOC_EXPORT (mongoc_change_stream_t *)
+mongoc_database_watch (const mongoc_database_t *db,
+                       const bson_t *pipeline,
+                       const bson_t *opts);
 
 BSON_END_DECLS
 

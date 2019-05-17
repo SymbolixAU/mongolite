@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-#include "mongoc-config.h"
+#include "mongoc/mongoc-config.h"
 
 #ifdef MONGOC_ENABLE_SSL_SECURE_CHANNEL
 
-#include <bson.h>
+#include <bson/bson.h>
 
-#include "mongoc-log.h"
-#include "mongoc-trace-private.h"
-#include "mongoc-ssl.h"
-#include "mongoc-stream-tls.h"
-#include "mongoc-stream-tls-private.h"
-#include "mongoc-secure-channel-private.h"
-#include "mongoc-stream-tls-secure-channel-private.h"
-#include "mongoc-errno-private.h"
+#include "mongoc/mongoc-log.h"
+#include "mongoc/mongoc-trace-private.h"
+#include "mongoc/mongoc-ssl.h"
+#include "mongoc/mongoc-stream-tls.h"
+#include "mongoc/mongoc-stream-tls-private.h"
+#include "mongoc/mongoc-secure-channel-private.h"
+#include "mongoc/mongoc-stream-tls-secure-channel-private.h"
+#include "mongoc/mongoc-errno-private.h"
 
 
 #undef MONGOC_LOG_DOMAIN
@@ -317,7 +317,7 @@ mongoc_secure_channel_setup_ca (
 
    file = fopen (opt->ca_file, "rb");
    if (!file) {
-      MONGOC_WARNING ("Couldn't open file '%s'", opt->ca_file);
+      MONGOC_ERROR ("Couldn't open file '%s'", opt->ca_file);
       return false;
    }
 
@@ -476,7 +476,7 @@ mongoc_secure_channel_read (mongoc_stream_tls_t *tls,
    ssize_t length;
 
    errno = 0;
-   TRACE ("Wanting to read: %d", data_length);
+   TRACE ("Wanting to read: %d, timeout is %d", data_length, tls->timeout_msec);
    /* 4th argument is minimum bytes, while the data_length is the
     * size of the buffer. We are totally fine with just one TLS record (few
     *bytes)
@@ -508,6 +508,13 @@ mongoc_secure_channel_write (mongoc_stream_tls_t *tls,
 
 
    return length;
+}
+
+void
+mongoc_secure_channel_realloc_buf (size_t *size, uint8_t **buf, size_t new_size)
+{
+   *size = bson_next_power_of_two (new_size);
+   *buf = bson_realloc (*buf, *size);
 }
 
 /**
@@ -647,9 +654,7 @@ mongoc_secure_channel_handshake_step_2 (mongoc_stream_tls_t *tls,
    mongoc_stream_tls_secure_channel_t *secure_channel =
       (mongoc_stream_tls_secure_channel_t *) tls->ctx;
    SECURITY_STATUS sspi_status = SEC_E_OK;
-   unsigned char *reallocated_buffer;
    ssize_t nread = -1, written = -1;
-   size_t reallocated_length;
    SecBufferDesc outbuf_desc;
    SecBufferDesc inbuf_desc;
    SecBuffer outbuf[3];
@@ -666,33 +671,11 @@ mongoc_secure_channel_handshake_step_2 (mongoc_stream_tls_t *tls,
       return false;
    }
 
-   /* buffer to store previously received and decrypted data */
-   if (secure_channel->decdata_buffer == NULL) {
-      secure_channel->decdata_offset = 0;
-      secure_channel->decdata_length = MONGOC_SCHANNEL_BUFFER_INIT_SIZE;
-      secure_channel->decdata_buffer =
-         bson_malloc0 (secure_channel->decdata_length);
-   }
-
-   /* buffer to store previously received and encrypted data */
-   if (secure_channel->encdata_buffer == NULL) {
-      secure_channel->encdata_offset = 0;
-      secure_channel->encdata_length = MONGOC_SCHANNEL_BUFFER_INIT_SIZE;
-      secure_channel->encdata_buffer =
-         bson_malloc0 (secure_channel->encdata_length);
-   }
-
-   /* if we need a bigger buffer to read a full message, increase buffer now */
-   if (secure_channel->encdata_length - secure_channel->encdata_offset <
-       MONGOC_SCHANNEL_BUFFER_FREE_SIZE) {
-      /* increase internal encrypted data buffer */
-      reallocated_length =
-         secure_channel->encdata_offset + MONGOC_SCHANNEL_BUFFER_FREE_SIZE;
-      reallocated_buffer =
-         bson_realloc (secure_channel->encdata_buffer, reallocated_length);
-
-      secure_channel->encdata_buffer = reallocated_buffer;
-      secure_channel->encdata_length = reallocated_length;
+   /* grow the buffer if necessary */
+   if (secure_channel->encdata_length == secure_channel->encdata_offset) {
+      mongoc_secure_channel_realloc_buf (&secure_channel->encdata_length,
+                                         &secure_channel->encdata_buffer,
+                                         secure_channel->encdata_length + 1);
    }
 
    for (;;) {
@@ -723,9 +706,9 @@ mongoc_secure_channel_handshake_step_2 (mongoc_stream_tls_t *tls,
          secure_channel->encdata_offset += nread;
       }
 
-      TRACE ("encrypted data buffer: offset %zu length %zu",
-             secure_channel->encdata_offset,
-             secure_channel->encdata_length);
+      TRACE ("encrypted data buffer: offset %d length %d",
+             (int) secure_channel->encdata_offset,
+             (int) secure_channel->encdata_length);
 
       /* setup input buffers */
       _mongoc_secure_channel_init_sec_buffer (

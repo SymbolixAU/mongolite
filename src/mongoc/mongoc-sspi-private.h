@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_SSPI_PRIVATE_H
 #define MONGOC_SSPI_PRIVATE_H
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
-
-#include <bson.h>
+#include <bson/bson.h>
+#include "mongoc/mongoc-sasl-private.h"
 
 
 BSON_BEGIN_DECLS
@@ -39,6 +38,7 @@ BSON_BEGIN_DECLS
 #define MONGOC_SSPI_AUTH_GSS_CONTINUE 0
 
 typedef struct {
+   mongoc_sasl_t sasl;
    CredHandle cred;
    CtxtHandle ctx;
    WCHAR *spn;

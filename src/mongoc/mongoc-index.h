@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_INDEX_H
 #define MONGOC_INDEX_H
 
-#if !defined(MONGOC_INSIDE) && !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-macros.h"
+#include "mongoc/mongoc-macros.h"
 
 
 BSON_BEGIN_DECLS
@@ -73,11 +71,11 @@ typedef struct {
 
 
 MONGOC_EXPORT (const mongoc_index_opt_t *)
-mongoc_index_opt_get_default (void) BSON_GNUC_CONST;
+mongoc_index_opt_get_default (void) BSON_GNUC_PURE;
 MONGOC_EXPORT (const mongoc_index_opt_geo_t *)
-mongoc_index_opt_geo_get_default (void) BSON_GNUC_CONST;
+mongoc_index_opt_geo_get_default (void) BSON_GNUC_PURE;
 MONGOC_EXPORT (const mongoc_index_opt_wt_t *)
-mongoc_index_opt_wt_get_default (void) BSON_GNUC_CONST;
+mongoc_index_opt_wt_get_default (void) BSON_GNUC_PURE;
 MONGOC_EXPORT (void)
 mongoc_index_opt_init (mongoc_index_opt_t *opt);
 MONGOC_EXPORT (void)

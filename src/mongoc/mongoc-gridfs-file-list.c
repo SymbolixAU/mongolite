@@ -17,16 +17,16 @@
 
 #include <limits.h>
 
-#include "mongoc-cursor.h"
-#include "mongoc-cursor-private.h"
-#include "mongoc-collection-private.h"
-#include "mongoc-gridfs.h"
-#include "mongoc-gridfs-private.h"
-#include "mongoc-gridfs-file.h"
-#include "mongoc-gridfs-file-private.h"
-#include "mongoc-gridfs-file-list.h"
-#include "mongoc-gridfs-file-list-private.h"
-#include "mongoc-trace-private.h"
+#include "mongoc/mongoc-cursor.h"
+#include "mongoc/mongoc-cursor-private.h"
+#include "mongoc/mongoc-collection-private.h"
+#include "mongoc/mongoc-gridfs.h"
+#include "mongoc/mongoc-gridfs-private.h"
+#include "mongoc/mongoc-gridfs-file.h"
+#include "mongoc/mongoc-gridfs-file-private.h"
+#include "mongoc/mongoc-gridfs-file-list.h"
+#include "mongoc/mongoc-gridfs-file-list-private.h"
+#include "mongoc/mongoc-trace-private.h"
 
 
 #undef MONGOC_LOG_DOMAIN
@@ -40,20 +40,31 @@ _mongoc_gridfs_file_list_new (mongoc_gridfs_t *gridfs,
 {
    mongoc_gridfs_file_list_t *list;
    mongoc_cursor_t *cursor;
+   bool use_unwrapped;
+   bson_t opts;
+   bson_t unwrapped;
+   bson_error_t error;
+   bson_init (&opts);
+   use_unwrapped = _mongoc_cursor_translate_dollar_query_opts (
+      query, &opts, &unwrapped, &error);
 
-   cursor = _mongoc_cursor_new (gridfs->client,
-                                gridfs->files->ns,
-                                MONGOC_QUERY_NONE,
-                                0,
-                                limit,
-                                0,
-                                true /* is_find */,
-                                query,
-                                NULL,
-                                gridfs->files->read_prefs,
-                                gridfs->files->read_concern);
 
+   cursor = _mongoc_cursor_find_new (gridfs->client,
+                                     gridfs->files->ns,
+                                     use_unwrapped ? &unwrapped : query,
+                                     &opts,
+                                     NULL,
+                                     gridfs->files->read_prefs,
+                                     gridfs->files->read_concern);
    BSON_ASSERT (cursor);
+   bson_destroy (&opts);
+   if (limit) {
+      (void) mongoc_cursor_set_limit (cursor, limit);
+   }
+   bson_destroy (&unwrapped);
+   if (error.domain) {
+      memcpy (&cursor->error, &error, sizeof (bson_error_t));
+   }
 
    list = (mongoc_gridfs_file_list_t *) bson_malloc0 (sizeof *list);
 
@@ -112,7 +123,9 @@ mongoc_gridfs_file_list_error (mongoc_gridfs_file_list_t *list,
 void
 mongoc_gridfs_file_list_destroy (mongoc_gridfs_file_list_t *list)
 {
-   BSON_ASSERT (list);
+   if (!list) {
+      return;
+   }
 
    mongoc_cursor_destroy (list->cursor);
    bson_free (list);

@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_CLUSTER_PRIVATE_H
 #define MONGOC_CLUSTER_PRIVATE_H
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-array-private.h"
-#include "mongoc-buffer-private.h"
-#include "mongoc-config.h"
-#include "mongoc-client.h"
-#include "mongoc-list-private.h"
-#include "mongoc-opcode.h"
-#include "mongoc-rpc-private.h"
-#include "mongoc-server-stream-private.h"
-#include "mongoc-set-private.h"
-#include "mongoc-stream.h"
-#include "mongoc-topology-private.h"
-#include "mongoc-topology-description-private.h"
-#include "mongoc-write-concern.h"
-#include "mongoc-scram-private.h"
-#include "mongoc-cmd-private.h"
+#include "mongoc/mongoc-array-private.h"
+#include "mongoc/mongoc-buffer-private.h"
+#include "mongoc/mongoc-config.h"
+#include "mongoc/mongoc-client.h"
+#include "mongoc/mongoc-list-private.h"
+#include "mongoc/mongoc-opcode.h"
+#include "mongoc/mongoc-rpc-private.h"
+#include "mongoc/mongoc-server-stream-private.h"
+#include "mongoc/mongoc-set-private.h"
+#include "mongoc/mongoc-stream.h"
+#include "mongoc/mongoc-topology-private.h"
+#include "mongoc/mongoc-topology-description-private.h"
+#include "mongoc/mongoc-write-concern.h"
+#include "mongoc/mongoc-scram-private.h"
+#include "mongoc/mongoc-cmd-private.h"
 
 BSON_BEGIN_DECLS
 
@@ -59,9 +57,6 @@ typedef struct _mongoc_cluster_t {
    int64_t operation_id;
    uint32_t request_id;
    uint32_t sockettimeoutms;
-   uint8_t scram_client_key[MONGOC_SCRAM_HASH_SIZE];
-   uint8_t scram_server_key[MONGOC_SCRAM_HASH_SIZE];
-   uint8_t scram_salted_password[MONGOC_SCRAM_HASH_SIZE];
    uint32_t socketcheckintervalms;
    mongoc_uri_t *uri;
    unsigned requires_auth : 1;
@@ -70,10 +65,10 @@ typedef struct _mongoc_cluster_t {
 
    mongoc_set_t *nodes;
    mongoc_array_t iov;
+
+   mongoc_scram_cache_t *scram_cache;
 } mongoc_cluster_t;
 
-bool
-mongoc_cluster_is_not_master_error (const bson_error_t *error);
 
 void
 mongoc_cluster_init (mongoc_cluster_t *cluster,
@@ -82,6 +77,9 @@ mongoc_cluster_init (mongoc_cluster_t *cluster,
 
 void
 mongoc_cluster_destroy (mongoc_cluster_t *cluster);
+
+void
+mongoc_cluster_disconnect (mongoc_cluster_t *cluster);
 
 void
 mongoc_cluster_disconnect_node (mongoc_cluster_t *cluster,
@@ -121,16 +119,22 @@ mongoc_cluster_try_recv (mongoc_cluster_t *cluster,
 mongoc_server_stream_t *
 mongoc_cluster_stream_for_reads (mongoc_cluster_t *cluster,
                                  const mongoc_read_prefs_t *read_prefs,
+                                 const mongoc_client_session_t *cs,
+                                 bson_t *reply,
                                  bson_error_t *error);
 
 mongoc_server_stream_t *
 mongoc_cluster_stream_for_writes (mongoc_cluster_t *cluster,
+                                  const mongoc_client_session_t *cs,
+                                  bson_t *reply,
                                   bson_error_t *error);
 
 mongoc_server_stream_t *
 mongoc_cluster_stream_for_server (mongoc_cluster_t *cluster,
                                   uint32_t server_id,
                                   bool reconnect_ok,
+                                  const mongoc_client_session_t *cs,
+                                  bson_t *reply,
                                   bson_error_t *error);
 
 bool

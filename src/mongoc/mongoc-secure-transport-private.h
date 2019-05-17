@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_SECURE_TRANSPORT_PRIVATE_H
 #define MONGOC_SECURE_TRANSPORT_PRIVATE_H
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-ssl.h"
-#include "mongoc-stream-tls-secure-transport-private.h"
+#include "mongoc/mongoc-ssl.h"
+#include "mongoc/mongoc-stream-tls-secure-transport-private.h"
 #include <Security/Security.h>
 
 
 BSON_BEGIN_DECLS
 
+char *
+_mongoc_cfstringref_to_cstring (CFStringRef ref);
 
 char *
 _mongoc_secure_transport_extract_subject (const char *filename,
@@ -48,6 +48,7 @@ bool
 mongoc_secure_transport_setup_ca (
    mongoc_stream_tls_secure_transport_t *secure_transport,
    mongoc_ssl_opt_t *opt);
+
 bool
 mongoc_secure_transport_setup_certificate (
    mongoc_stream_tls_secure_transport_t *secure_transport,

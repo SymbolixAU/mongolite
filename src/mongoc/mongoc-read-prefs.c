@@ -15,9 +15,9 @@
  */
 
 
-#include "mongoc-error.h"
-#include "mongoc-read-prefs-private.h"
-#include "mongoc-trace-private.h"
+#include "mongoc/mongoc-error.h"
+#include "mongoc/mongoc-read-prefs-private.h"
+#include "mongoc/mongoc-trace-private.h"
 
 
 mongoc_read_prefs_t *
@@ -92,6 +92,8 @@ mongoc_read_prefs_add_tag (mongoc_read_prefs_t *read_prefs, const bson_t *tag)
    } else {
       bson_append_document (&read_prefs->tags, str, -1, &empty);
    }
+
+   bson_destroy (&empty);
 }
 
 
@@ -156,6 +158,7 @@ mongoc_read_prefs_copy (const mongoc_read_prefs_t *read_prefs)
 
    if (read_prefs) {
       ret = mongoc_read_prefs_new (read_prefs->mode);
+      bson_destroy (&ret->tags);
       bson_copy_to (&read_prefs->tags, &ret->tags);
       ret->max_staleness_seconds = read_prefs->max_staleness_seconds;
    }
