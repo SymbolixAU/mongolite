@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_BUFFER_PRIVATE_H
 #define MONGOC_BUFFER_PRIVATE_H
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-stream.h"
+#include "mongoc/mongoc-stream.h"
 
 
 BSON_BEGIN_DECLS
@@ -35,7 +33,6 @@ typedef struct _mongoc_buffer_t mongoc_buffer_t;
 struct _mongoc_buffer_t {
    uint8_t *data;
    size_t datalen;
-   off_t off;
    size_t len;
    bson_realloc_func realloc_func;
    void *realloc_data;

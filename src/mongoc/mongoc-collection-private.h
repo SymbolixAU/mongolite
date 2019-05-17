@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
+
 #ifndef MONGOC_COLLECTION_PRIVATE_H
 #define MONGOC_COLLECTION_PRIVATE_H
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#include <bson/bson.h>
 
-#include <bson.h>
-
-#include "mongoc-client.h"
+#include "mongoc/mongoc-client.h"
 
 BSON_BEGIN_DECLS
 
@@ -49,9 +47,6 @@ _mongoc_collection_new (mongoc_client_t *client,
                         const mongoc_read_prefs_t *read_prefs,
                         const mongoc_read_concern_t *read_concern,
                         const mongoc_write_concern_t *write_concern);
-mongoc_cursor_t *
-_mongoc_collection_find_indexes_legacy (mongoc_collection_t *collection);
-
 
 BSON_END_DECLS
 

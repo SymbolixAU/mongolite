@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include "mongoc-array-private.h"
-#include "mongoc-error.h"
-#include "mongoc-server-description-private.h"
-#include "mongoc-topology-description-apm-private.h"
-#include "mongoc-trace-private.h"
-#include "mongoc-util-private.h"
-#include "mongoc-read-prefs-private.h"
-#include "mongoc-set-private.h"
-#include "mongoc-client-private.h"
-#include "mongoc-thread-private.h"
+#include "mongoc/mongoc-array-private.h"
+#include "mongoc/mongoc-error.h"
+#include "mongoc/mongoc-server-description-private.h"
+#include "mongoc/mongoc-topology-description-apm-private.h"
+#include "mongoc/mongoc-trace-private.h"
+#include "mongoc/mongoc-util-private.h"
+#include "mongoc/mongoc-read-prefs-private.h"
+#include "mongoc/mongoc-set-private.h"
+#include "mongoc/mongoc-client-private.h"
+#include "mongoc/mongoc-thread-private.h"
 
 
 static bool
@@ -1237,7 +1237,7 @@ mongoc_topology_description_update_cluster_time (
    }
 
    bson_iter_document (&iter, &size, &data);
-   bson_init_static (&cluster_time, data, (size_t) size);
+   BSON_ASSERT (bson_init_static (&cluster_time, data, (size_t) size));
 
    if (bson_empty (&td->cluster_time) ||
        _mongoc_cluster_time_greater (&cluster_time, &td->cluster_time)) {
@@ -1260,7 +1260,7 @@ _mongoc_topology_description_add_new_servers (
    rs_members[2] = &server->passives;
 
    for (i = 0; i < 3; i++) {
-      bson_iter_init (&member_iter, rs_members[i]);
+      BSON_ASSERT (bson_iter_init (&member_iter, rs_members[i]));
 
       while (bson_iter_next (&member_iter)) {
          mongoc_topology_description_add_server (
@@ -1885,7 +1885,7 @@ _mongoc_topology_description_check_compatible (
             MONGOC_ERROR_PROTOCOL,
             MONGOC_ERROR_PROTOCOL_BAD_WIRE_VERSION,
             "Server at %s reports wire version %d, but this"
-            " version of libmongoc requires at least 2 (MongoDB 2.6)",
+            " version of libmongoc requires at least 3 (MongoDB 3.0)",
             sd->host.host_and_port,
             sd->max_wire_version);
       }

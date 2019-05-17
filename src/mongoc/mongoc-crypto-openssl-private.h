@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
+#include "mongoc/mongoc-prelude.h"
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
-
-#include "mongoc-config.h"
-#include <bson.h>
+#include "mongoc/mongoc-config.h"
+#include <bson/bson.h>
 
 #ifdef MONGOC_ENABLE_CRYPTO_LIBCRYPTO
 
 #ifndef MONGOC_CRYPTO_OPENSSL_PRIVATE_H
 #define MONGOC_CRYPTO_OPENSSL_PRIVATE_H
 
-#include "mongoc-crypto-private.h"
+#include "mongoc/mongoc-crypto-private.h"
 
 BSON_BEGIN_DECLS
 
@@ -35,15 +32,29 @@ void
 mongoc_crypto_openssl_hmac_sha1 (mongoc_crypto_t *crypto,
                                  const void *key,
                                  int key_len,
-                                 const unsigned char *d,
-                                 int n,
-                                 unsigned char *md /* OUT */);
+                                 const unsigned char *data,
+                                 int data_len,
+                                 unsigned char *hmac_out);
 
 bool
 mongoc_crypto_openssl_sha1 (mongoc_crypto_t *crypto,
                             const unsigned char *input,
                             const size_t input_len,
-                            unsigned char *output /* OUT */);
+                            unsigned char *hash_out);
+
+void
+mongoc_crypto_openssl_hmac_sha256 (mongoc_crypto_t *crypto,
+                                   const void *key,
+                                   int key_len,
+                                   const unsigned char *data,
+                                   int data_len,
+                                   unsigned char *hmac_out);
+
+bool
+mongoc_crypto_openssl_sha256 (mongoc_crypto_t *crypto,
+                              const unsigned char *input,
+                              const size_t input_len,
+                              unsigned char *hash_out);
 
 BSON_END_DECLS
 #endif /* MONGOC_CRYPTO_OPENSSL_PRIVATE_H */

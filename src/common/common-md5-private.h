@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 MongoDB, Inc.
+ * Copyright 2018-present MongoDB, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,35 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef MONGOC_CURSOR_ARRAY_PRIVATE_H
-#define MONGOC_CURSOR_ARRAY_PRIVATE_H
+#include "common-prelude.h"
 
-#if !defined(MONGOC_COMPILATION)
-#error "Only <mongoc.h> can be included directly."
-#endif
+#ifndef COMMON_MD5_PRIVATE_H
+#define COMMON_MD5_PRIVATE_H
 
-#include <bson.h>
-
-#include "mongoc-cursor-private.h"
-
+#include "bson/bson.h"
 
 BSON_BEGIN_DECLS
 
-
 void
-_mongoc_cursor_array_init (mongoc_cursor_t *cursor,
-                           const bson_t *command,
-                           const char *field_name);
-
-bool
-_mongoc_cursor_array_prime (mongoc_cursor_t *cursor);
-
-
+_bson_md5_init (bson_md5_t *pms);
 void
-_mongoc_cursor_array_set_bson (mongoc_cursor_t *cursor, const bson_t *bson);
-
+_bson_md5_append (bson_md5_t *pms, const uint8_t *data, uint32_t nbytes);
+void
+_bson_md5_finish (bson_md5_t *pms, uint8_t digest[16]);
 
 BSON_END_DECLS
 
+#endif /* COMMON_MD5_PRIVATE_H */
 
-#endif /* MONGOC_CURSOR_ARRAY_PRIVATE_H */

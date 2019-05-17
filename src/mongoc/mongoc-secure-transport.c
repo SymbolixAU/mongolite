@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-#include "mongoc-config.h"
+#include "mongoc/mongoc-config.h"
 
 #ifdef MONGOC_ENABLE_SSL_SECURE_TRANSPORT
 
-#include <bson.h>
+#include <bson/bson.h>
 
-#include "mongoc-log.h"
-#include "mongoc-trace-private.h"
-#include "mongoc-ssl.h"
-#include "mongoc-stream-tls.h"
-#include "mongoc-stream-tls-private.h"
-#include "mongoc-secure-transport-private.h"
-#include "mongoc-stream-tls-secure-transport-private.h"
+#include "mongoc/mongoc-log.h"
+#include "mongoc/mongoc-trace-private.h"
+#include "mongoc/mongoc-ssl.h"
+#include "mongoc/mongoc-stream-tls.h"
+#include "mongoc/mongoc-stream-tls-private.h"
+#include "mongoc/mongoc-secure-transport-private.h"
+#include "mongoc/mongoc-stream-tls-secure-transport-private.h"
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <Security/Security.h>
@@ -38,6 +38,12 @@
 #include <CoreFoundation/CoreFoundation.h>
 
 /* Jailbreak Darwin Private API */
+/*
+ * An alternative to using SecIdentityCreate is to use
+ * SecIdentityCreateWithCertificate with a temporary keychain. However, doing so
+ * leads to memory bugs. Unfortunately, using this private API seems to be the
+ * best solution.
+ */
 SecIdentityRef
 SecIdentityCreate (CFAllocatorRef allocator,
                    SecCertificateRef certificate,
@@ -46,24 +52,49 @@ SecIdentityCreate (CFAllocatorRef allocator,
 #undef MONGOC_LOG_DOMAIN
 #define MONGOC_LOG_DOMAIN "stream-secure_transport"
 
+char *
+_mongoc_cfstringref_to_cstring (CFStringRef str)
+{
+   CFIndex length;
+   CFStringEncoding encoding;
+   CFIndex max_size;
+   char *cs;
 
-void
+   if (!str) {
+      return NULL;
+   }
+
+   if (CFGetTypeID (str) != CFStringGetTypeID ()) {
+      return NULL;
+   }
+
+   length = CFStringGetLength (str);
+   encoding = kCFStringEncodingASCII;
+   max_size = CFStringGetMaximumSizeForEncoding (length, encoding) + 1;
+   cs = bson_malloc ((size_t) max_size);
+
+   if (CFStringGetCString (str, cs, max_size, encoding)) {
+      return cs;
+   }
+
+   bson_free (cs);
+   return NULL;
+}
+
+static void
 _bson_append_cftyperef (bson_string_t *retval, const char *label, CFTypeRef str)
 {
-   if (str && CFGetTypeID (str) == CFStringGetTypeID ()) {
-      CFIndex length = CFStringGetLength (str);
-      CFStringEncoding encoding = kCFStringEncodingASCII;
-      CFIndex maxSize =
-         CFStringGetMaximumSizeForEncoding (length, encoding) + 1;
+   char *cs;
 
-      char *cs = bson_malloc ((size_t) maxSize);
-      if (CFStringGetCString (str, cs, maxSize, encoding)) {
+   if (str) {
+      cs = _mongoc_cfstringref_to_cstring (str);
+
+      if (cs) {
          bson_string_append_printf (retval, "%s%s", label, cs);
+         bson_free (cs);
       } else {
          bson_string_append_printf (retval, "%s(null)", label);
       }
-
-      bson_free (cs);
    }
 }
 
@@ -170,6 +201,16 @@ _mongoc_secure_transport_RFC2253_from_cert (SecCertificateRef cert)
    return bson_string_free (retval, false);
 }
 
+
+static void
+safe_release (CFTypeRef ref)
+{
+   if (ref) {
+      CFRelease (ref);
+   }
+}
+
+
 bool
 _mongoc_secure_transport_import_pem (const char *filename,
                                      const char *passphrase,
@@ -177,14 +218,14 @@ _mongoc_secure_transport_import_pem (const char *filename,
                                      SecExternalItemType *type)
 {
    SecExternalFormat format = kSecFormatPEMSequence;
-   SecItemImportExportKeyParameters params;
-   SecTransformRef sec_transform;
-   CFReadStreamRef read_stream;
-   CFDataRef dataref;
-   CFErrorRef error;
-   CFURLRef url;
+   SecItemImportExportKeyParameters params = {0};
+   SecTransformRef sec_transform = NULL;
+   CFReadStreamRef read_stream = NULL;
+   CFDataRef dataref = NULL;
+   CFErrorRef error = NULL;
+   CFURLRef url = NULL;
    OSStatus res;
-
+   bool r = false;
 
    if (!filename) {
       TRACE ("%s", "No certificate provided");
@@ -208,9 +249,14 @@ _mongoc_secure_transport_import_pem (const char *filename,
    url = CFURLCreateFromFileSystemRepresentation (
       kCFAllocatorDefault, (const UInt8 *) filename, strlen (filename), false);
    read_stream = CFReadStreamCreateWithFile (kCFAllocatorDefault, url);
+   if (!CFReadStreamOpen (read_stream)) {
+      MONGOC_ERROR ("Cannot find certificate in '%s', error reading file",
+                    filename);
+      goto done;
+   }
+
    sec_transform = SecTransformCreateReadTransformWithReadStream (read_stream);
    dataref = SecTransformExecute (sec_transform, &error);
-
 
    if (error) {
       CFStringRef str = CFErrorCopyDescription (error);
@@ -218,33 +264,29 @@ _mongoc_secure_transport_import_pem (const char *filename,
          "Failed importing PEM '%s': %s",
          filename,
          CFStringGetCStringPtr (str, CFStringGetFastestEncoding (str)));
-      CFRelease (str);
-      CFRelease (sec_transform);
-      CFRelease (read_stream);
-      CFRelease (url);
 
-      if (passphrase) {
-         CFRelease (params.passphrase);
-      }
-      return false;
+      CFRelease (str);
+      goto done;
    }
 
    res = SecItemImport (
       dataref, CFSTR (".pem"), &format, type, 0, &params, NULL, items);
-   CFRelease (dataref);
-   CFRelease (sec_transform);
-   CFRelease (read_stream);
-   CFRelease (url);
 
-   if (passphrase) {
-      CFRelease (params.passphrase);
-   }
    if (res) {
       MONGOC_ERROR ("Failed importing PEM '%s' (code: %d)", filename, res);
-      return false;
+      goto done;
    }
 
-   return true;
+   r = true;
+
+done:
+   safe_release (dataref);
+   safe_release (sec_transform);
+   safe_release (read_stream);
+   safe_release (url);
+   safe_release (params.passphrase);
+
+   return r;
 }
 
 char *
@@ -307,7 +349,7 @@ mongoc_secure_transport_setup_certificate (
    success = _mongoc_secure_transport_import_pem (
       opt->pem_file, opt->pem_pwd, &items, &type);
    if (!success) {
-      MONGOC_ERROR ("Can't find certificate in: '%s'", opt->pem_file);
+      /* caller will log an error */
       return false;
    }
 
@@ -336,10 +378,11 @@ mongoc_secure_transport_setup_certificate (
 
    id = SecIdentityCreate (kCFAllocatorDefault, cert, key);
    secure_transport->my_cert =
-      CFArrayCreateMutableCopy (kCFAllocatorDefault, (CFIndex) 2, items);
+      CFArrayCreateMutable (kCFAllocatorDefault, 2, &kCFTypeArrayCallBacks);
 
-   CFArraySetValueAtIndex (secure_transport->my_cert, 0, id);
-   CFArraySetValueAtIndex (secure_transport->my_cert, 1, cert);
+   CFArrayAppendValue (secure_transport->my_cert, id);
+   CFArrayAppendValue (secure_transport->my_cert, cert);
+   CFRelease (id);
 
    /*
     *  Secure Transport assumes the following:
@@ -360,46 +403,51 @@ mongoc_secure_transport_setup_ca (
    mongoc_stream_tls_secure_transport_t *secure_transport,
    mongoc_ssl_opt_t *opt)
 {
-   if (opt->ca_file) {
-      CFArrayRef items;
-      SecExternalItemType type = kSecItemTypeCertificate;
-      bool success = _mongoc_secure_transport_import_pem (
-         opt->ca_file, NULL, &items, &type);
+   CFArrayRef items;
+   SecExternalItemType type = kSecItemTypeCertificate;
+   bool success;
 
-      if (!success) {
-         MONGOC_ERROR ("Can't find certificate in \"%s\"", opt->ca_file);
-         return false;
-      }
-
-      if (type == kSecItemTypeAggregate) {
-         CFMutableArrayRef anchors = CFArrayCreateMutable (
-            kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-
-         for (CFIndex i = 0; i < CFArrayGetCount (items); ++i) {
-            CFTypeID item_id = CFGetTypeID (CFArrayGetValueAtIndex (items, i));
-
-            if (item_id == SecCertificateGetTypeID ()) {
-               CFArrayAppendValue (anchors, CFArrayGetValueAtIndex (items, i));
-            }
-         }
-         secure_transport->anchors = CFRetain (anchors);
-         CFRelease (items);
-      } else if (type == kSecItemTypeCertificate) {
-         secure_transport->anchors = CFRetain (items);
-      }
-
-      /* This should be SSLSetCertificateAuthorities But the /TLS/ tests fail
-       * when it is */
-      success = !SSLSetTrustedRoots (
-         secure_transport->ssl_ctx_ref, secure_transport->anchors, true);
-      TRACE ("Setting certificate authority %s (%s)",
-             success ? "succeeded" : "failed",
-             opt->ca_file);
-      return true;
+   if (!opt->ca_file) {
+      TRACE ("%s", "No CA provided, using defaults");
+      return false;
    }
 
-   TRACE ("%s", "No CA provided, using defaults");
-   return false;
+   success =
+      _mongoc_secure_transport_import_pem (opt->ca_file, NULL, &items, &type);
+
+   if (!success) {
+      MONGOC_ERROR ("Cannot load Certificate Authorities from file \'%s\'",
+                    opt->ca_file);
+      return false;
+   }
+
+   if (type == kSecItemTypeAggregate) {
+      CFMutableArrayRef anchors =
+         CFArrayCreateMutable (kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+
+      for (CFIndex i = 0; i < CFArrayGetCount (items); ++i) {
+         CFTypeID item_id = CFGetTypeID (CFArrayGetValueAtIndex (items, i));
+
+         if (item_id == SecCertificateGetTypeID ()) {
+            CFArrayAppendValue (anchors, CFArrayGetValueAtIndex (items, i));
+         }
+      }
+      secure_transport->anchors = anchors;
+      CFRelease (items);
+   } else if (type == kSecItemTypeCertificate) {
+      secure_transport->anchors = items;
+   } else {
+      CFRelease (items);
+   }
+
+   /* This should be SSLSetCertificateAuthorities But the /TLS/ tests fail
+    * when it is */
+   success = !SSLSetTrustedRoots (
+      secure_transport->ssl_ctx_ref, secure_transport->anchors, true);
+   TRACE ("Setting certificate authority %s (%s)",
+          success ? "succeeded" : "failed",
+          opt->ca_file);
+   return true;
 }
 
 OSStatus
@@ -464,10 +512,8 @@ mongoc_secure_transport_write (SSLConnectionRef connection,
    switch (errno) {
    case EAGAIN:
       RETURN (errSSLWouldBlock);
-      break;
    default:
       RETURN (-36); /* ioErr */
-      break;
    }
 }
 #endif

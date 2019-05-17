@@ -15,11 +15,11 @@
  */
 
 
-#include "mongoc-write-concern.h"
-#include "mongoc-write-concern-private.h"
-#include "mongoc-find-and-modify.h"
-#include "mongoc-find-and-modify-private.h"
-#include "mongoc-util-private.h"
+#include "mongoc/mongoc-write-concern.h"
+#include "mongoc/mongoc-write-concern-private.h"
+#include "mongoc/mongoc-find-and-modify.h"
+#include "mongoc/mongoc-find-and-modify-private.h"
+#include "mongoc/mongoc-util-private.h"
 
 
 /**
@@ -37,7 +37,7 @@ mongoc_find_and_modify_opts_new (void)
 
    opts = (mongoc_find_and_modify_opts_t *) bson_malloc0 (sizeof *opts);
    bson_init (&opts->extra);
-   opts->bypass_document_validation = MONGOC_BYPASS_DOCUMENT_VALIDATION_DEFAULT;
+   opts->bypass_document_validation = false;
 
    return opts;
 }
@@ -49,7 +49,7 @@ mongoc_find_and_modify_opts_set_sort (mongoc_find_and_modify_opts_t *opts,
    BSON_ASSERT (opts);
 
    if (sort) {
-      _mongoc_bson_destroy_if_set (opts->sort);
+      bson_destroy (opts->sort);
       opts->sort = bson_copy (sort);
       return true;
    }
@@ -78,7 +78,7 @@ mongoc_find_and_modify_opts_set_update (mongoc_find_and_modify_opts_t *opts,
    BSON_ASSERT (opts);
 
    if (update) {
-      _mongoc_bson_destroy_if_set (opts->update);
+      bson_destroy (opts->update);
       opts->update = bson_copy (update);
       return true;
    }
@@ -107,7 +107,7 @@ mongoc_find_and_modify_opts_set_fields (mongoc_find_and_modify_opts_t *opts,
    BSON_ASSERT (opts);
 
    if (fields) {
-      _mongoc_bson_destroy_if_set (opts->fields);
+      bson_destroy (opts->fields);
       opts->fields = bson_copy (fields);
       return true;
    }
@@ -155,9 +155,7 @@ mongoc_find_and_modify_opts_set_bypass_document_validation (
 {
    BSON_ASSERT (opts);
 
-   opts->bypass_document_validation =
-      bypass ? MONGOC_BYPASS_DOCUMENT_VALIDATION_TRUE
-             : MONGOC_BYPASS_DOCUMENT_VALIDATION_FALSE;
+   opts->bypass_document_validation = bypass;
    return true;
 }
 
@@ -167,8 +165,7 @@ mongoc_find_and_modify_opts_get_bypass_document_validation (
 {
    BSON_ASSERT (opts);
 
-   return opts->bypass_document_validation ==
-          MONGOC_BYPASS_DOCUMENT_VALIDATION_TRUE;
+   return opts->bypass_document_validation;
 }
 
 bool
@@ -220,9 +217,9 @@ void
 mongoc_find_and_modify_opts_destroy (mongoc_find_and_modify_opts_t *opts)
 {
    if (opts) {
-      _mongoc_bson_destroy_if_set (opts->sort);
-      _mongoc_bson_destroy_if_set (opts->update);
-      _mongoc_bson_destroy_if_set (opts->fields);
+      bson_destroy (opts->sort);
+      bson_destroy (opts->update);
+      bson_destroy (opts->fields);
       bson_destroy (&opts->extra);
       bson_free (opts);
    }
